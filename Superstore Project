@@ -1,0 +1,19 @@
+ SELECT *
+FROM superstore
+ORDER BY price;
+-- 1. This is the first part of the project to order by price 
+
+SELECT SUM(price), AVG(price),MIN(price),MAX(price),COUNT(price)
+FROM superstore;
+-- 2. This is the second part of the project to find the aggregation of the price.
+
+SELECT price,item_name
+FROM superstore
+WHERE category="Kitchen Supplies"
+ORDER BY item_name;
+-- 3. This is the third part where im only getting supplies specifically in the "Kitchen Supplies" and displaying their prices. 
+
+-- How many items are in stock for each category and put it in asending order and the prices of each category. 
+SELECT SUM(stock_quantity),SUM(price),category
+FROM superstore
+GROUP BY category;
