@@ -1,0 +1,20 @@
+-- I use the data from kaggle to get this data set for employees 
+--These sets of query will mostly show my use of CTE and SQL window functions. 
+
+https://www.kaggle.com/datasets/iqmansingh/company-employee-dataset?resource=download
+
+--For this query here, I am using a query that gets the average of the salary per department, and what each employee makes in each company also. 
+
+Select employee,company,department,salary,
+ avg(salary) OVER ( Partition BY department)as total
+ FROM Emp
+ order by total desc;
+
+
+
+
+--For this query I am ranking each employee by how much salary they all  make. It doesn't matter what their job is or what department. This bascially shows just a general salary. 
+
+Select employee, employee_id,department,salary,
+Rank() over(Order by salary)rank
+from Emp
