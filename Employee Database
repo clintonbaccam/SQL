@@ -14,7 +14,61 @@ Select employee,company,department,salary,
 
 
 --For this query I am ranking each employee by how much salary they all  make. It doesn't matter what their job is or what department. This bascially shows just a general salary. 
-
 Select employee, employee_id,department,salary,
 Rank() over(Order by salary)rank
 from Emp
+
+
+--Ranking employees based off their salary in this documentation
+SELECT employee_id,department,salary,
+RANK() OVER(ORDER BY salary)
+FROM Emp;
+
+
+--Find the difference between the employees salary and the average salary
+SELECT employee_id,department, salary,salary-avg(salary) OVER() as salary_vs_average
+FROM Emp;
+
+
+--Calculate the moving average between salaries
+SELECT employee_id, department, salary,
+avg(salary) OVER(ORDER BY employee ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)as moving_average
+FROM Emp;
+
+
+--Ranking each employee based of their salary in a certain department
+SELECT employee_id, department, salary,
+RANK() Over(Partition BY department order by salary) as rank_salary_department
+FROM Emp
+
+
+--You want to list the top 3 highest-paid employees in each department along with their salaries.
+WITH CTE AS (
+SELECT employee_id,
+department,
+salary,
+RANK() OVER(Partition BY department order by salary desc) as rank
+FROM Emp
+)
+SELECT employee_id,department, salary
+FROM CTE
+WHERE rank<=3;
+
+
+--Find out if the employee makes more than their average salary per their department3
+WITH CTE AS(
+SELECT
+department,
+avg(salary) OVER(partition by department)as avg_salary
+FROM Emp
+group by department
+)
+SELECT 
+distinct e.employee_id,
+e.department,
+e.salary,
+C.avg_salary
+FROM Emp e
+JOIN CTE C 
+ON C.department=e.department
+WHERE e.salary>C.avg_salary;
