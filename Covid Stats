@@ -1,0 +1,122 @@
+Select *
+From PortfolioProject.dbo.CovidDeaths
+order by 3,4
+
+Select *
+From PortfolioProject.. CovidVaccinations
+order by 3,4
+
+-- Select Data that we are going to be using
+
+Select location,date,total_cases,new_cases,total_deaths,population
+From PortfolioProject..CovidDeaths
+order by 1,2
+
+-- Looking at total Cases vs Total Deaths
+Select location,date,total_cases,population,((total_cases/population)*100 ) as Death_Percentage
+From PortfolioProject..CovidDeaths
+--WHERE location like '%state%'
+order by 1,2
+
+--Looking at Countries with Highest infection Rate compared to Population
+Select location,population,Max(total_cases)as Highest_Infection_Count,Max(((total_cases/population)*100 )) as PercentPopulationInfected
+From PortfolioProject..CovidDeaths
+--WHERE location like '%state%'
+Group by population,location
+order by PercentPopulationInfected
+
+--Looking at Countries with Highest Death Count per Population
+Select location,Max(cast(total_deaths as int)) as TotalDeathCount
+From PortfolioProject..CovidDeaths
+WHERE continent is not null
+Group By Location
+Order by TotalDeathCount desc
+
+-- Lets Break things down by Continents
+
+
+--Showing the Continents with the Highest Death Counts
+Select continent,Max(cast(total_deaths as int)) as TotalDeathCount
+From PortfolioProject..CovidDeaths
+WHERE continent is not null
+Group By continent
+Order by TotalDeathCount desc
+
+--GLOBAL NUMBERS
+
+Select date,Sum(new_cases) as TotalCases,Sum(cast(new_deaths as int)) as TotalDeaths,Sum(cast(new_deaths as int))/Sum(new_cases)*100 as DeathPercentage--,total_deaths,(total_deaths/total_cases)*100 as DeathPercentage
+From PortfolioProject..CovidDeaths
+Where continent is not null AND
+new_cases !=0
+group by date
+order by 1,2
+
+
+--Looking at Total Population vs Vaccinations
+
+Select dea.continent,dea.location,dea.date,dea.population,vac.new_vaccinations
+,Sum(cast(vac.new_vaccinations as bigint))Over (Partition by dea.location order by dea.location) as TotalVaccinations
+From PortfolioProject..CovidDeaths dea
+Join PortfolioProject..CovidVaccinations vac
+on dea.location=vac.location
+and dea.date=vac.date
+Where dea.continent is not null
+Order by 2,3
+
+--USE CTE
+--Number of columns in the CTE and The select statement must be the same
+
+With PopvsVac(continent,location,date,population,new_vaccinations,RollingPeopleVaccinated)
+as
+(
+Select dea.continent,dea.location,dea.date,dea.population,vac.new_vaccinations
+,Sum(cast(vac.new_vaccinations as bigint))Over (Partition by dea.location order by dea.location) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths dea
+Join PortfolioProject..CovidVaccinations vac
+on dea.location=vac.location
+and dea.date=vac.date
+Where dea.continent is not null
+--Order by 2,3
+)
+
+Select *,(RollingPeopleVaccinated/Population)*100
+From PopvsVac
+
+--TEMP Table
+
+Create Table #PercentPopulationVaccinated
+(
+continent nvarchar(255),
+location nvarchar(255),
+date datetime,
+population numeric,
+new_vaccinations numeric,
+RollingPeopleVaccinated numeric
+)
+
+Insert into #PercentPopulationVaccinated
+Select dea.continent,dea.location,dea.date,dea.population,vac.new_vaccinations
+,Sum(cast(vac.new_vaccinations as bigint))Over (Partition by dea.location order by dea.location) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths dea
+Join PortfolioProject..CovidVaccinations vac
+on dea.location=vac.location
+and dea.date=vac.date
+Where dea.continent is not null
+Order by 2,3
+
+Select *,(RollingPeopleVaccinated/Population)*100
+From #PercentPopulationVaccinated
+
+--Creating View to store data for later visualizations
+
+Create View PercentPopulationVaccinated as
+Select dea.continent,dea.location,dea.date,dea.population,vac.new_vaccinations
+,Sum(cast(vac.new_vaccinations as bigint))Over (Partition by dea.location order by dea.location) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths dea
+Join PortfolioProject..CovidVaccinations vac
+on dea.location=vac.location
+and dea.date=vac.date
+Where dea.continent is not null
+--Order by 2,3
+
+
