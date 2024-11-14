@@ -1,0 +1,157 @@
+
+https://github.com/AlexTheAnalyst/PortfolioProjects/blob/main/Nashville%20Housing%20Data%20for%20Data%20Cleaning%20(reuploaded).xlsx
+
+This is the link to get the excel data and i just uploaded it to Microsoft SQL
+
+
+
+
+
+--Cleaning DATA
+
+Select *
+from PortfolioProject..NashvilleHousing
+
+
+--Standardize Date Format
+select SaleDateConverted, convert(Date,SaleDate)
+from PortfolioProject..NashvilleHousing
+
+Update NashvilleHousing
+Set SaleDate=CONVERT(Date,SaleDate)
+
+ALTER TABLE NashvilleHousing
+Add SaleDateConverted Date;
+
+Update NashvilleHousing
+Set SaleDateConverted=CONVERT(Date,SaleDate)
+
+
+--Populate Property Address Data
+
+Select a.ParcelID,a.PropertyAddress,b.ParcelID,b.PropertyAddress, ISNULL(a.PropertyAddress,b.PropertyAddress)
+from PortfolioProject..NashvilleHousing a
+JOIN PortfolioProject..NashvilleHousing b
+On a.ParcelID=b.ParcelID
+AND a.[UniqueID ]<>b.[UniqueID ]
+Where a.PropertyAddress is null
+
+Update a
+Set PropertyAddress = ISNULL(a.PropertyAddress,b.PropertyAddress)
+from PortfolioProject..NashvilleHousing a
+JOIN PortfolioProject..NashvilleHousing b
+On a.ParcelID=b.ParcelID
+AND a.[UniqueID ]<>b.[UniqueID ]
+Where a.PropertyAddress is null
+
+
+
+--Breaking out Address into Individual Columns (Address, City,State)
+Select PropertyAddress
+From PortfolioProject..NashvilleHousing
+
+Select SUBSTRING(PropertyAddress,1, CHARINDEX(',',PropertyAddress)-1) as Address,
+SUBSTRING(PropertyAddress, CHARINDEX(',',PropertyAddress)+1,LEN(PropertyAddress)) as address
+From PortfolioProject..NashvilleHousing
+
+ALTER TABLE NashvilleHousing
+Add PropertyStreetAddress Nvarchar(255);
+
+Update NashvilleHousing
+Set PropertyStreetAddress =SUBSTRING(PropertyAddress,1, CHARINDEX(',',PropertyAddress)-1)
+
+
+Alter Table NashvilleHousing
+Add PropertyCity Nvarchar(255);
+
+Update NashvilleHousing
+Set PropertyCity = SUBSTRING(PropertyAddress, CHARINDEX(',',PropertyAddress)+1,LEN(PropertyAddress))
+
+Select *
+From NashvilleHousing
+
+
+Select OwnerAddress
+From PortfolioProject..NashvilleHousing
+
+Select
+PARSENAME(Replace(OwnerAddress,',','.'),3),
+PARSENAME(Replace(OwnerAddress,',','.'),2),
+PARSENAME(Replace(OwnerAddress,',','.'),1)
+From PortfolioProject..NashvilleHousing
+
+Alter Table NashvilleHousing
+Add OwnerStreetAddress Nvarchar(255);
+
+Update NashvilleHousing
+Set OwnerStreetAddress = PARSENAME(Replace(OwnerAddress,',','.'),3)
+
+
+
+Alter Table NashvilleHousing
+Add OwnerCity Nvarchar(255);
+
+Update NashvilleHousing
+Set OwnerCity = PARSENAME(Replace(OwnerAddress,',','.'),2)
+
+
+
+Alter Table NashvilleHousing
+Add OwnerState Nvarchar(255);
+
+Update NashvilleHousing
+Set OwnerState = PARSENAME(Replace(OwnerAddress,',','.'),1)
+
+
+
+
+
+
+--Change Y and N to Yes and No in "Sold as Vacant" Field
+
+Select Distinct(SoldAsVacant),count(SoldAsVacant)
+From PortfolioProject..NashvilleHousing
+Group By SoldAsVacant
+order by 2
+
+
+Select SoldAsVacant
+, Case when SoldAsVacant='Y' then 'Yes'
+		when SoldAsVacant='N' then 'No'
+		Else SoldAsVacant
+		END
+From PortfolioProject..NashvilleHousing
+
+Update NashvilleHousing
+Set SoldAsVacant=Case when SoldAsVacant='Y' then 'Yes'
+		when SoldAsVacant='N' then 'No'
+		Else SoldAsVacant
+		END
+
+
+
+
+--Remove Duplicates
+With RowNUMCTE as(
+Select*,
+row_number()over(partition by ParcelID,PropertyAddress,SalePrice,SaleDate,LegalReference order by UniqueID) row_num
+From PortfolioProject..NashvilleHousing
+--order by ParcelID
+)
+
+Select *
+From RowNUMCTE
+Where row_num>1
+
+
+
+
+
+
+--Remove Unused Columns
+Select *
+From NashvilleHousing
+
+Alter Table PortfolioProject.dbo.NashvilleHousing
+Drop Column SaleDate
+
